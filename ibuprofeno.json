@@ -1,0 +1,32 @@
+[
+  {
+    "nombre": "IBUPROFENO CINFA 20 MG/ML SUSPENSIÓN ORAL EFG  1 frasco de 200 ml",
+    "inicio": "11/09/2026",
+    "fin": "15/01/2027",
+    "observacion": "Existe/n otro/s medicamento/s con el mismo principio activo y para la misma vía de administración."
+  },
+  {
+    "nombre": "IBUPROFENO (ARGININA) CODRAMOL 600 mg GRANULADO PARA SOLUCION ORAL EFG , 40 sobres",
+    "inicio": "05/03/2026",
+    "fin": null,
+    "observacion": "Existe/n otro/s medicamento/s con el mismo principio activo y para la misma vía de administración."
+  },
+  {
+    "nombre": "IBUPROFENO (ARGININA) FARMALID 600 mg GRANULADO PARA SOLUCION ORAL EFG , 40 sobres",
+    "inicio": "05/03/2026",
+    "fin": null,
+    "observacion": "Existe/n otro/s medicamento/s con el mismo principio activo y para la misma vía de administración."
+  },
+  {
+    "nombre": "IBUPROFENO KERN PHARMA 600 mg GRANULADO EFERVESCENTE EFG, 40 sobres",
+    "inicio": "24/11/2025",
+    "fin": "10/11/2026",
+    "observacion": "Existe/n otro/s medicamento/s con el mismo principio activo y para la misma vía de administración."
+  },
+  {
+    "nombre": "IBUPROFENO KERN PHARMA 200 mg GRANULADO EFERVESCENTE EFG , 20 sobres",
+    "inicio": "07/11/2025",
+    "fin": "30/10/2026",
+    "observacion": "Existe/n otro/s medicamento/s con el mismo principio activo y para la misma vía de administración."
+  }
+]
