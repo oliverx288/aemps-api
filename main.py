@@ -1,10 +1,17 @@
-import requests # importamos la librería para hablar con internet
+import requests
 
-url = "https://cima.aemps.es/cima/rest/psuministro" # dirección de la API de la AEMPS
-respuesta = requests.get(url) # pedimos datos a la API
+def buscar_problemas(nombre_medicamento):
+    url = "https://cima.aemps.es/cima/rest/psuministro"
+    respuesta = requests.get(url, params={"nombre": nombre_medicamento})  # filtramos por nombre
+    
+    datos = respuesta.json()
+    print(f"Problemas encontrados para '{nombre_medicamento}': {datos['totalFilas']}")
+    print("---")
+    
+    for problema in datos['resultados']:
+        print(f"Medicamento: {problema['nombre']}")
+        print(f"Observación: {problema['observ']}")
+        print("---")
 
-datos = respuesta.json() # la respusta la convertimos en un diccionario
-print(f"Total problemas activos: {datos['totalFilas']}") # imprimimos todo
-
-for problema in datos['resultados'][:3]:
-    print(problema) # imprimimos cada problema completo
+# probamos con ibuprofeno
+buscar_problemas("ibuprofeno")
