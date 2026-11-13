@@ -1,0 +1,142 @@
+/* ==========================================================================
+   tokens.css - Tokens de diseño del proyecto AEMPS
+   Explicación completa de cada decisión: docs/DISENO.md
+
+   Reglas de uso:
+   - Los demás CSS NO deben escribir colores, tamaños o espacios "a mano":
+     siempre var(--nombre). Así, cambiar un valor aquí lo cambia en toda la web.
+   - Todos los pares texto/fondo cumplen WCAG AA (ratios medidos y anotados).
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark; /* los controles nativos (inputs, scroll) se adaptan al tema */
+
+  /* ---------- Colores base (tema claro) ---------- */
+  --color-fondo:            #FFFFFF; /* fondo de página */
+  --color-superficie:       #F3F6FA; /* tarjetas, cabecera, zonas destacadas */
+  --color-texto:            #1A2332; /* texto principal: 15,8:1 sobre fondo */
+  --color-texto-suave:      #4A5568; /* texto secundario: 7,5:1 sobre fondo, 6,9:1 sobre superficie */
+  --color-borde:            #6B7A8C; /* bordes de controles: 4,4:1 (mín. 3:1 para componentes UI) */
+  --color-borde-suave:      #D5DCE5; /* separadores decorativos (no definen un control) */
+
+  /* ---------- Acción principal ---------- */
+  --color-primario:         #0B5CAD; /* enlaces y botón: 6,7:1 sobre fondo */
+  --color-primario-hover:   #084A8C; /* al pasar el ratón: 8,9:1 con texto blanco */
+  --color-sobre-primario:   #FFFFFF; /* texto dentro del botón primario: 6,7:1 */
+
+  /* ---------- Foco de teclado ---------- */
+  --color-foco:             #0B5CAD; /* 6,7:1 sobre fondo; el contorno se dibuja además con halo blanco */
+  --foco-grosor:            3px;
+  --foco-separacion:        2px;
+  --foco-halo:              #FFFFFF; /* halo para que se vea también sobre fondos de color */
+
+  /* ---------- Estados semánticos (par fondo + texto, siempre juntos) ---------- */
+  --estado-activo-fondo:    #FDECEC; /* problema de suministro ACTIVO */
+  --estado-activo-texto:    #9B1C1C; /* 7,1:1 */
+  --estado-resuelto-fondo:  #E6F4E7; /* problema RESUELTO */
+  --estado-resuelto-texto:  #1B5E20; /* 6,9:1 */
+  --estado-aviso-fondo:     #FFF3D6; /* avisos: "datos pueden estar desactualizados" */
+  --estado-aviso-texto:     #7A4A00; /* 6,8:1 */
+  --estado-info-fondo:      #E5F0FB; /* mensajes informativos, chatbot */
+  --estado-info-texto:      #0B4F8A; /* 7,3:1 */
+  --estado-error-fondo:     #FDECEC; /* errores: mismo par que "activo" pero siempre con icono y texto distinto */
+  --estado-error-texto:     #9B1C1C;
+
+  /* ---------- Tipografía ---------- */
+  /* Fuentes del sistema: carga instantánea, sin servidores externos, muy legibles */
+  --fuente-base:   system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fuente-mono:   ui-monospace, "SF Mono", Menlo, Consolas, monospace; /* para códigos (CN, NRegistro) */
+
+  --texto-xs:   0.875rem;  /* 14 px: solo etiquetas auxiliares, nunca texto largo */
+  --texto-sm:   1rem;      /* 16 px: texto secundario */
+  --texto-base: 1.125rem;  /* 18 px: texto de lectura (más grande que lo habitual, a propósito) */
+  --texto-md:   1.25rem;   /* 20 px: títulos de tarjeta */
+  --texto-lg:   1.5rem;    /* 24 px: título de sección */
+  --texto-xl:   2rem;      /* 32 px: título de página */
+
+  --peso-normal:    400;
+  --peso-semi:      600;
+  --peso-negrita:   700;
+
+  --interlineado-texto:   1.6;  /* lectura cómoda */
+  --interlineado-titulo:  1.25;
+  --ancho-lectura:        65ch; /* líneas largas cansan: límite de caracteres por línea */
+
+  /* ---------- Espaciado (escala de 4 px; 1 rem = 16 px) ---------- */
+  --espacio-1:  0.25rem;  /*  4 px */
+  --espacio-2:  0.5rem;   /*  8 px */
+  --espacio-3:  0.75rem;  /* 12 px */
+  --espacio-4:  1rem;     /* 16 px */
+  --espacio-5:  1.5rem;   /* 24 px */
+  --espacio-6:  2rem;     /* 32 px */
+  --espacio-7:  3rem;     /* 48 px */
+  --espacio-8:  4rem;     /* 64 px */
+
+  /* ---------- Tamaños mínimos táctiles ---------- */
+  --objetivo-minimo: 2.75rem; /* 44 px: alto mínimo de botones, enlaces de acción y campos */
+
+  /* ---------- Forma y profundidad ---------- */
+  --radio-sm:   0.25rem;
+  --radio-md:   0.5rem;   /* campos, botones */
+  --radio-lg:   0.75rem;  /* tarjetas */
+  --radio-pildora: 999px; /* etiquetas de estado */
+  --borde-grosor: 2px;    /* bordes algo gruesos: se ven mejor con baja visión */
+
+  --sombra-sm: 0 1px 2px rgba(26, 35, 50, 0.12);
+  --sombra-md: 0 2px 8px rgba(26, 35, 50, 0.14);
+
+  /* ---------- Layout ---------- */
+  --ancho-contenido: 60rem;  /* 960 px: ancho máximo del contenido */
+  --bp-medio:        40rem;  /* 640 px: referencia para @media (ver nota abajo) */
+  --bp-grande:       64rem;  /* 1024 px */
+
+  /* ---------- Movimiento ---------- */
+  --transicion: 150ms ease-out;
+}
+
+/* NOTA: las variables CSS no se pueden usar dentro de @media (...).
+   Usa los valores literales: @media (min-width: 40rem) y (min-width: 64rem).
+   --bp-medio y --bp-grande solo documentan esos valores. */
+
+/* ==========================================================================
+   Tema oscuro: se activa solo si el sistema del usuario lo pide.
+   Se redefinen únicamente los colores y sombras; el resto no cambia.
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-fondo:            #0F1720;
+    --color-superficie:       #18222F;
+    --color-texto:            #E8EDF3; /* 15,3:1 sobre fondo, 13,6:1 sobre superficie */
+    --color-texto-suave:      #A9B6C6; /* 8,8:1 sobre fondo, 7,8:1 sobre superficie */
+    --color-borde:            #7C8CA0; /* 5,3:1 */
+    --color-borde-suave:      #2C3A4C;
+
+    --color-primario:         #7DB8F5; /* 8,6:1 sobre fondo */
+    --color-primario-hover:   #A8D0FA;
+    --color-sobre-primario:   #0F1720; /* texto oscuro sobre botón claro: 8,6:1 */
+
+    --color-foco:             #7DB8F5;
+    --foco-halo:              #0F1720;
+
+    --estado-activo-fondo:    #3A1515;
+    --estado-activo-texto:    #FFB4B4; /* 9,6:1 */
+    --estado-resuelto-fondo:  #12301A;
+    --estado-resuelto-texto:  #9FDDA3; /* 9,1:1 */
+    --estado-aviso-fondo:     #3A2A05;
+    --estado-aviso-texto:     #FFD98A; /* 10,3:1 */
+    --estado-info-fondo:      #102A47;
+    --estado-info-texto:      #A8D0FA; /* 9,1:1 */
+    --estado-error-fondo:     #3A1515;
+    --estado-error-texto:     #FFB4B4;
+
+    --sombra-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --sombra-md: 0 2px 8px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Respeta a quien tiene activada la opción "reducir movimiento" del sistema */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transicion: 0ms;
+  }
+}
