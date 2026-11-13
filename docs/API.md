@@ -3,7 +3,7 @@
 Este documento es la **fuente de verdad** para el frontend y el backend. Si algo
 cambia en la API, se cambia primero aquí y se avisa.
 
-- Versión del contrato: **1.0** (borrador inicial, sin implementar todavía)
+- Versión del contrato: **1.1** (aprobado por la usuaria; ver registro de cambios en la sección 7)
 - Base de la API: `http://localhost:8000` (desarrollo). Todas las rutas empiezan por `/api`.
 - Formato: JSON en UTF-8. Los nombres de los campos están en español y en `snake_case`.
 - La API **solo lee de nuestra base de datos SQLite** (`backend/aemps.db`). Nunca llama a CIMA
@@ -45,8 +45,8 @@ Datos que comprobamos al revisar las 5 páginas (922 registros, 13-nov-2026):
 | `cn` es único (922 registros, 922 `cn` distintos) y es un texto de 6 dígitos | Es la clave primaria. Se guarda como **TEXT**, no como número (para no perder ceros a la izquierda si los hubiera). |
 | `fini` y `ffin` son **milisegundos desde 1970 (epoch)**, y corresponden a la medianoche hora de Madrid (p. ej. `1794438000000` = 2026-11-12 00:00 en Madrid) | Los convertimos a fecha `YYYY-MM-DD` en zona `Europe/Madrid`. Ver sección 4. |
 | `ffin` **falta** en 268 de 922 registros | Es opcional: significa "fecha de fin todavía no conocida". Se guarda como `NULL`. |
-| `activo` vale `true` en los 922 registros | La fuente **solo lista problemas vigentes**. Un problema resuelto simplemente desaparece de la lista. Por eso `activo` de CIMA no nos sirve para saber si algo se resolvió; ver sección 5. |
-| `tipoProblemaSuministro` es un número (valores vistos: 1 a 7 y 9 a 12) | CIMA no publica aquí el significado de cada código. Lo guardamos tal cual como número y **no inventamos nombres** para los tipos. El texto explicativo viene en `observ`. |
+| `activo` vale `true` en los 922 registros | Hoy la fuente solo lista problemas vigentes y un problema resuelto simplemente desaparece de la lista. Aun así **guardamos `activo` tal cual** (columna propia) y el estado se deriva de él y de `en_origen`; ver sección 5. |
+| `tipoProblemaSuministro` es un número (valores vistos: 1 a 7 y 9 a 12) | CIMA no publica aquí el significado de cada código. Lo guardamos tal cual como número (INTEGER) y **no inventamos nombres** para los tipos. El texto explicativo viene en `observ`. |
 | `observ` está siempre presente (máx. 345 caracteres) | Texto libre para mostrar al usuario. |
 | `nombre` mezcla marca, forma farmacéutica y formato en un único texto | Lo guardamos entero. No intentamos separarlo. |
 
@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS problemas_suministro (
     fecha_inicio       TEXT    NOT NULL,             -- 'YYYY-MM-DD' (fini convertido, hora de Madrid)
     fecha_fin          TEXT,                         -- 'YYYY-MM-DD' o NULL si no se conoce (ffin)
     observaciones      TEXT    NOT NULL DEFAULT '',  -- texto libre (observ)
+    activo             INTEGER NOT NULL DEFAULT 1,   -- campo 'activo' de la AEMPS tal cual: 1 = true, 0 = false
     en_origen          INTEGER NOT NULL DEFAULT 1,   -- 1 = aparecía en CIMA en la última importación, 0 = ya no
     actualizado_en     TEXT    NOT NULL              -- fecha/hora UTC de la última importación que lo tocó (ISO 8601)
 );
@@ -91,8 +92,9 @@ CREATE INDEX IF NOT EXISTS idx_problemas_en_origen    ON problemas_suministro (e
   están en CIMA: se han resuelto. **No se borran**, así se conserva el histórico.
 - **Índices**: sobre las columnas por las que se filtra u ordena (`fecha_inicio`, `fecha_fin`, `tipo_problema`,
   `en_origen`). No hay índice útil para `LIKE '%x%'`, pero con este volumen no importa.
-- **El estado no se guarda**: se calcula al consultar (sección 5). Si lo guardáramos, quedaría desfasado cada
-  día que pasa sin importar.
+- **`activo`**: copia fiel del campo `activo` de la AEMPS (1 o 0). Si CIMA no lo enviara, se guarda 1.
+- **El estado no se guarda**: se deriva al consultar de `activo` y `en_origen` (sección 5). `vencido` tampoco se
+  guarda: depende de la fecha de hoy, así que se calcula en cada consulta.
 
 ---
 
@@ -164,7 +166,8 @@ Parámetros de query (todos opcionales):
 | Parámetro | Tipo | Por defecto | Descripción |
 |---|---|---|---|
 | `q` | texto | (vacío) | Busca en el nombre del medicamento **y** en el `cn`. Sin distinguir mayúsculas ni tildes. Mínimo 2 caracteres si se envía. Ej.: `q=ibuprofeno`, `q=677012`. |
-| `estado` | `activo` \| `resuelto` \| `todos` | `activo` | Filtra por estado calculado (sección 5). |
+| `estado` | `activo` \| `resuelto` \| `todos` | `activo` | Filtra por estado (sección 5). |
+| `ocultar_vencidos` | booleano (`true` / `false`) | `false` | Si es `true`, oculta los registros con `vencido = true` (su `fecha_fin` ya pasó, hoy en `Europe/Madrid`). Por defecto no se oculta nada. Los registros sin `fecha_fin` nunca se ocultan. |
 | `tipo` | entero | (todos) | Filtra por `tipo_problema`. |
 | `orden` | `fecha_inicio_desc` \| `fecha_inicio_asc` \| `nombre` | `fecha_inicio_desc` | Orden de los resultados. Si hay empate se ordena por `cn` para que la paginación sea estable. |
 | `pagina` | entero >= 1 | `1` | Número de página (empieza en 1). |
@@ -186,6 +189,7 @@ Respuesta `200`:
       "fecha_inicio": "2026-11-12",
       "fecha_fin": "2026-11-26",
       "estado": "activo",
+      "vencido": false,
       "observaciones": "Existe/n otro/s medicamento/s con el mismo principio activo y para la misma vía de administración."
     },
     {
@@ -195,6 +199,7 @@ Respuesta `200`:
       "fecha_inicio": "2026-11-11",
       "fecha_fin": null,
       "estado": "activo",
+      "vencido": false,
       "observaciones": "Existe/n otro/s medicamento/s con el mismo principio activo y para la misma vía de administración."
     }
   ]
@@ -207,12 +212,15 @@ Notas:
 - Si no hay coincidencias: `200` con `"total": 0`, `"total_paginas": 0` y `"resultados": []` (no es un error).
 - Si `pagina` supera `total_paginas`, devuelve `200` con `resultados: []`.
 - El listado devuelve los mismos campos que el detalle excepto `actualizado_en`.
+- `estado` y `vencido` son campos independientes: un registro puede ser `"activo"` y a la vez `vencido: true`
+  (la AEMPS aún lo marca activo pero su fecha de fin ya pasó). Con `ocultar_vencidos=true` esos desaparecen del listado.
 
 Ejemplos de petición:
 
 ```
 GET /api/problemas
 GET /api/problemas?q=ibuprofeno&estado=todos
+GET /api/problemas?ocultar_vencidos=true
 GET /api/problemas?tipo=5&orden=nombre&pagina=2&tamanio=50
 ```
 
@@ -236,6 +244,7 @@ Respuesta `200`:
   "fecha_inicio": "2026-11-12",
   "fecha_fin": "2026-11-26",
   "estado": "activo",
+  "vencido": false,
   "observaciones": "Existe/n otro/s medicamento/s con el mismo principio activo y para la misma vía de administración.",
   "actualizado_en": "2026-11-13T09:30:00Z"
 }
@@ -265,8 +274,10 @@ Respuesta `200`:
 }
 ```
 
-- `por_tipo` cuenta solo los problemas **activos**, ordenados de mayor a menor `total`.
+- `por_tipo` cuenta solo los problemas **activos** (por `estado`, sin tener en cuenta `vencido`), ordenados de mayor
+  a menor `total`.
 - `total = activos + resueltos`.
+- `activos` y `resueltos` siguen la regla de `estado` (sección 5); no se descuentan los vencidos.
 
 ---
 
@@ -298,32 +309,37 @@ Respuesta `200` (prevista, puede ampliarse cuando se implemente, avisando antes)
 
 ---
 
-## 5. Cómo se calcula `estado`
+## 5. Cómo se derivan `estado` y `vencido`
 
-`estado` es un campo **calculado** (no está en la base de datos). Solo puede valer `"activo"` o `"resuelto"`.
-El frontend debe usar el campo `estado` tal cual y **no recalcularlo** con las fechas.
+Ninguno de los dos está guardado en la base de datos: se calculan al consultar. El frontend debe usar los campos
+tal cual y **no recalcularlos** con las fechas.
 
-Regla (con `hoy` = fecha de hoy en zona `Europe/Madrid`, formato `YYYY-MM-DD`):
+### `estado` (solo `"activo"` o `"resuelto"`)
+
+Respeta el campo `activo` de la AEMPS:
 
 ```
-estado = "resuelto"   si  en_origen = 0            (CIMA ya no lo lista)
-                      o   fecha_fin < hoy           (la fecha de fin ya pasó)
-estado = "activo"     en cualquier otro caso
+estado = "activo"     si  activo = 1  y  en_origen = 1
+estado = "resuelto"   en cualquier otro caso (activo = 0, o en_origen = 0)
 ```
 
-Es decir, un problema es **activo** si sigue en CIMA y su fecha de fin es hoy, futura o desconocida (`null`).
+- `activo = true` en la AEMPS -> `"activo"`; `activo = false` -> `"resuelto"`.
+- Un registro que **desaparece de CIMA** (`en_origen = 0`) sigue contando como `"resuelto"`.
+- La fecha de fin **ya no influye** en `estado`.
 
-### Por qué así
+### `vencido` (booleano)
 
-- Mirar solo las fechas no basta: `fecha_fin` puede ser `null` (hay 268 casos así) y, además, la fecha de fin es
-  una **previsión**; un problema puede resolverse antes o alargarse. Por eso añadimos la señal `en_origen`.
-- Mirar solo `activo` de CIMA tampoco sirve: vale `true` en todos los registros que devuelve.
-- Si `fecha_fin` ya pasó pero CIMA todavía lo lista, lo marcamos `resuelto`: es la interpretación más simple y
-  coherente con las fechas que se muestran. (Si más adelante se prefiere un tercer estado como "fecha vencida",
-  se añadirá avisando y actualizando este documento.)
-- Comparar con `fecha_fin < hoy` (estricto) hace que el último día del problema siga contando como activo.
-- Se calcula en el momento de la consulta con la fecha de hoy que pasa el código Python (no con `date('now')`
-  de SQLite, que usa UTC y podría fallar una hora alrededor de medianoche).
+```
+vencido = true    si  fecha_fin no es null  y  fecha_fin < hoy   (hoy = fecha en Europe/Madrid)
+vencido = false   en cualquier otro caso (incluida fecha_fin = null)
+```
+
+- Es informativo: sirve para que el frontend avise de que "la fecha de fin prevista ya pasó" aunque la AEMPS
+  siga marcando el problema como activo. Se calcula solo con las fechas, sea cual sea el `estado`.
+- Se compara con `<` estricto: el último día del problema todavía no está vencido.
+- Se puede ocultar con `GET /api/problemas?ocultar_vencidos=true` (por defecto no se oculta nada).
+- Se calcula con la fecha de hoy que da Python en `Europe/Madrid` (no con `date('now')` de SQLite, que usa UTC y
+  fallaría una hora alrededor de medianoche).
 
 ---
 
@@ -336,11 +352,11 @@ Aunque no forma parte de la API, define lo que la API espera encontrar en la tab
 | `cn` | `cn` | Texto, tal cual |
 | `nombre` | `nombre` | Tal cual |
 | `nombre` | `nombre_busqueda` | Minúsculas y sin tildes |
-| `tipoProblemaSuministro` | `tipo_problema` | Entero |
+| `tipoProblemaSuministro` | `tipo_problema` | Entero, tal cual (sin nombres inventados) |
 | `fini` | `fecha_inicio` | ms epoch a `YYYY-MM-DD` en `Europe/Madrid` |
-| `ffin` | `fecha_fin` | Igual; `NULL` si no viene |
+| `ffin` | `fecha_fin` | Igual; `NULL` si no viene (nunca cadena vacía) |
 | `observ` | `observaciones` | Tal cual (`''` si no viene) |
-| `activo` | (no se guarda) | No aporta información (siempre `true`) |
+| `activo` | `activo` | `1` si `true`, `0` si `false`, tal cual viene (`1` si no viene) |
 | (importación) | `en_origen`, `actualizado_en` | `1` y la hora UTC actual en cada fila importada |
 
 Pasos: leer todas las páginas (`totalFilas` / `tamanioPagina`), poner `en_origen = 0` en toda la tabla y hacer el
@@ -354,3 +370,4 @@ falla a mitad, la base no quede a medias.
 | Versión | Fecha | Cambio |
 |---|---|---|
 | 1.0 | 2026-11-13 | Primer contrato: tabla, `/api/salud`, `/api/problemas`, `/api/problemas/{cn}`, `/api/resumen`, `/api/chat` (reservado). |
+| 1.1 | 2026-11-13 | Decisiones de la usuaria: nueva columna `activo` (copia de la AEMPS); `estado` se deriva de `activo` y `en_origen` (ya no de `fecha_fin`); nuevo campo `vencido` en listado y detalle; nuevo filtro `ocultar_vencidos` en `GET /api/problemas`; `fecha_fin` es `NULL` si no existe; `tipo_problema` entero tal cual. |
