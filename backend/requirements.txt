@@ -1,0 +1,5 @@
+# Dependencias de la API. Instalar con: pip install -r backend/requirements.txt
+# (el script importar.py no necesita nada: usa solo la libreria estandar)
+fastapi==0.162.5
+uvicorn==0.54.0
+python-dotenv==1.2.4
